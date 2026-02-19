@@ -3,19 +3,19 @@
   "rewrites": [
     {
       "source": "/login",
-      "destination": "/api/server.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/send",
-      "destination": "/api/server.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/",
-      "destination": "/Public/index.html"
+      "destination": "/public/index.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/Public/$1"
+      "destination": "/public/$1"
     }
   ]
 }

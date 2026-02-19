@@ -88,9 +88,9 @@ if (require.main === module) {
     const PORT = process.env.PORT || 3000;
 
     // In local mode, we need to serve static files
-    app.use(express.static(path.join(__dirname, "../Public")));
+    app.use(express.static(path.join(__dirname, "../public")));
     app.get("*", (req, res) => {
-        res.sendFile(path.join(__dirname, "../Public/index.html"));
+        res.sendFile(path.join(__dirname, "../public/index.html"));
     });
 
     app.listen(PORT, () => {
