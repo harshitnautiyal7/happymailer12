@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bulk Mailing Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .box {
+            width: 400px;
+            padding: 20px;
+            background: #020617;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.15);
+            display: none;
+            /* Hidden by default */
+        }
+
+        #login-box {
+            display: block;
+            /* Show login by default */
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        input,
+        textarea,
+        button {
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+        }
+
+        textarea {
+            height: 100px;
+            resize: none;
+        }
+
+        button {
+            background: #06b6d4;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #22d3ee;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        small {
+            color: #94a3b8;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #065f46;
+            color: #34d399;
+        }
+
+        .error {
+            background: #7f1d1d;
+            color: #f87171;
+        }
+
+        .info {
+            background: #1e3a8a;
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box" id="login-box">
+        <h2>🔒 Security Login</h2>
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button onclick="login()">Login</button>
+        <div id="login-status"></div>
+    </div>
+
+    <div class="box" id="mailer-box">
+        <h2>📧 Happy Mailing</h2>
+
+        <input type="email" id="gmailUser" placeholder="Your Gmail Address" required>
+        <input type="password" id="gmailPass" placeholder="Gmail App Password" required>
+
+        <input type="text" id="subject" placeholder="Email Subject" required>
+
+        <textarea id="recipients" placeholder="Recipients emails (comma separated)"></textarea>
+        <small>example: test1@gmail.com, test2@gmail.com</small>
+
+        <textarea id="message" placeholder="Your message"></textarea>
+
+        <button onclick="sendMail()">Send</button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const status = document.getElementById("login-status");
+
+            try {
+                const res = await fetch("http://localhost:3000/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    document.getElementById("login-box").style.display = "none";
+                    document.getElementById("mailer-box").style.display = "block";
+                } else {
+                    const data = await res.json();
+                    status.innerText = data.msg || "❌ Invalid credentials";
+                    status.style.color = "#f87171";
+                    status.style.marginTop = "10px";
+                    status.style.textAlign = "center";
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                status.innerText = "❌ Server error. Check if the server is running.";
+                status.style.color = "#f87171";
+                status.style.marginTop = "10px";
+                status.style.textAlign = "center";
+            }
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById("status");
+            status.innerText = msg;
+            status.className = type;
+            status.style.display = "block";
+            if (type === "success") {
+                setTimeout(() => { status.style.display = "none"; }, 5000);
+            }
+        }
+
+        async function sendMail() {
+            const btn = document.querySelector("button");
+            const gmailUser = document.getElementById("gmailUser").value;
+            const gmailPass = document.getElementById("gmailPass").value;
+            const subject = document.getElementById("subject").value;
+            const recipients = document.getElementById("recipients").value;
+            const message = document.getElementById("message").value;
+
+            if (!gmailUser || !gmailPass || !subject || !recipients || !message) {
+                showStatus("⚠️ Please fill all fields", "error");
+                return;
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            btn.innerText = "⏳ Sending...";
+            showStatus("⏳ Sending emails. Please wait...", "info");
+
+            try {
+                const url = "http://localhost:3000/send";
+                console.log("Fetching from:", url);
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ gmailUser, gmailPass, subject, recipients, message })
+                });
+
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.msg || "Server returned an error");
+                    }
+                    showStatus(data.msg, "success");
+                } else {
+                    const text = await res.text();
+                    console.error("Non-JSON response:", text);
+                    throw new Error("Server returned non-JSON response. Status: " + res.status);
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                showStatus("❌ " + err.message, "error");
+            } finally {
+                // Restore button state
+                btn.disabled = false;
+                btn.innerText = "Send";
+            }
+        }
+    </script>
+
+
+</body>
+
+</html>
