@@ -27,13 +27,14 @@ app.post("/login", (req, res) => {
 // Send mail route
 app.post("/send", async (req, res) => {
     try {
-        const { gmailUser, gmailPass, subject, recipients, message } = req.body;
+        const { gmailUser, gmailPass, senderName, subject, recipients, message } = req.body;
 
         if (!gmailUser || !gmailPass || !recipients || !message) {
             return res.status(400).json({ msg: "❌ All fields are required" });
         }
 
         const emailSubject = subject || "Bulk Message";
+        const fromName = senderName ? senderName.trim() : "Support";
 
         const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -52,15 +53,30 @@ app.post("/send", async (req, res) => {
             return res.status(400).json({ msg: "❌ No valid recipient emails found" });
         }
 
-        for (let email of emails) {
+        for (let i = 0; i < emails.length; i++) {
+            const email = emails[i];
+            const messageId = `<${Date.now()}.${Math.floor(Math.random() * 10000)}@gmail.com>`;
+
             await transporter.sendMail({
-                from: gmailUser,
+                from: `"${fromName}" <${gmailUser}>`,
                 to: email,
                 subject: emailSubject,
-                text: message
+                text: message,
+                headers: {
+                    'Message-ID': messageId,
+                    'Date': new Date().toUTCString(),
+                    'X-Mailer': 'Professional Mailer 1.0',
+                    'List-Unsubscribe': `<mailto:${gmailUser}?subject=unsubscribe>`
+                }
             });
 
-            await new Promise(r => setTimeout(r, 2000));
+            console.log(`✅ Sent to: ${email} (${i + 1}/${emails.length})`);
+
+            // Randomized delay between 2 to 5 seconds to look human-like
+            if (i < emails.length - 1) {
+                const delay = Math.floor(Math.random() * 3000) + 2000;
+                await new Promise(r => setTimeout(r, delay));
+            }
         }
 
         return res.json({ msg: "✅ Emails sent successfully!" });

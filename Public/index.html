@@ -118,6 +118,7 @@
         <input type="email" id="gmailUser" placeholder="Your Gmail Address" required>
         <input type="password" id="gmailPass" placeholder="Gmail App Password" required>
 
+        <input type="text" id="senderName" placeholder="Sender Name (e.g. Sales Team)" required>
         <input type="text" id="subject" placeholder="Email Subject" required>
 
         <textarea id="recipients" placeholder="Recipients emails (comma separated)"></textarea>
@@ -183,11 +184,12 @@
             const btn = document.querySelector("button");
             const gmailUser = document.getElementById("gmailUser").value;
             const gmailPass = document.getElementById("gmailPass").value;
+            const senderName = document.getElementById("senderName").value;
             const subject = document.getElementById("subject").value;
             const recipients = document.getElementById("recipients").value;
             const message = document.getElementById("message").value;
 
-            if (!gmailUser || !gmailPass || !subject || !recipients || !message) {
+            if (!gmailUser || !gmailPass || !senderName || !subject || !recipients || !message) {
                 showStatus("⚠️ Please fill all fields", "error");
                 return;
             }
@@ -203,7 +205,7 @@
                 const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ gmailUser, gmailPass, subject, recipients, message })
+                    body: JSON.stringify({ gmailUser, gmailPass, senderName, subject, recipients, message })
                 });
 
                 const contentType = res.headers.get("content-type");
